@@ -1,6 +1,11 @@
 """Atomic file writes, checkpoint persistence, failed-image tracking."""
-import json, logging, os, time
+
+import json
+import logging
+import os
+import time
 from pathlib import Path
+
 from . import config
 
 log = logging.getLogger("processor")
@@ -26,14 +31,12 @@ def load_checkpoint() -> dict:
             return json.loads(config.CHECKPOINT_FILE.read_text())
         except Exception:
             pass
-    return {"completed": [], "counts": {}, "errors": 0,
-            "start_time": time.time()}
+    return {"completed": [], "counts": {}, "errors": 0, "start_time": time.time()}
 
 
 def save_checkpoint(cp: dict):
     try:
-        atomic_write(config.CHECKPOINT_FILE,
-                     json.dumps(cp, indent=2))
+        atomic_write(config.CHECKPOINT_FILE, json.dumps(cp, indent=2))
     except Exception as e:
         log.error(f"Checkpoint save failed: {e}")
 

@@ -1,6 +1,12 @@
 """Qwen via Ollama — streaming, thinking log, watchdog, exponential backoff."""
-import json, logging, threading, time
+
+import json
+import logging
+import threading
+import time
+
 import ollama as _ollama
+
 from . import config
 from .bootstrap import ollama_running, restart_ollama
 
@@ -23,8 +29,7 @@ def call_qwen(img_b64: str, stem: str, model: str) -> dict:
 
             stream = _ollama.chat(
                 model=model,
-                messages=[{"role": "user", "content": config.PROMPT,
-                           "images": [img_b64]}],
+                messages=[{"role": "user", "content": config.PROMPT, "images": [img_b64]}],
                 options={"temperature": 0, "num_predict": config.NUM_PREDICT},
                 stream=True,
             )
@@ -37,11 +42,11 @@ def call_qwen(img_b64: str, stem: str, model: str) -> dict:
                     if "<think>" in joined:
                         seen_open = True
                         in_think = True
-                        think_partial = joined[joined.index("<think>") + len("<think>"):]
+                        think_partial = joined[joined.index("<think>") + len("<think>") :]
                 elif in_think:
                     think_partial += token
                     if "</think>" in think_partial:
-                        before = think_partial[:think_partial.index("</think>")]
+                        before = think_partial[: think_partial.index("</think>")]
                         for line in before.split("\n"):
                             line = line.strip()
                             if line:
@@ -57,7 +62,7 @@ def call_qwen(img_b64: str, stem: str, model: str) -> dict:
 
             raw = "".join(tokens).strip()
             if "</think>" in raw:
-                raw = raw[raw.rfind("</think>") + len("</think>"):].strip()
+                raw = raw[raw.rfind("</think>") + len("</think>") :].strip()
             if raw.startswith("```"):
                 raw = raw.split("\n", 1)[1].rsplit("```", 1)[0]
             result["raw"] = raw
@@ -83,15 +88,16 @@ def analyse_with_backoff(img_b64: str, stem: str, model: str) -> dict:
             return call_qwen(img_b64, stem, model)
 
         except json.JSONDecodeError as e:
-            wait = config.BACKOFF_BASE ** attempt
-            log.warning(f"  [{stem}] JSON parse error (attempt {attempt+1}): {e} — retry in {wait}s")
+            wait = config.BACKOFF_BASE**attempt
+            log.warning(
+                f"  [{stem}] JSON parse error (attempt {attempt + 1}): {e} — retry in {wait}s"
+            )
             last_error = {"_parse_error": str(e)}
             time.sleep(wait)
 
-        except (ConnectionRefusedError, TimeoutError,
-                _ollama.ResponseError) as e:
-            wait = config.BACKOFF_BASE ** attempt
-            log.warning(f"  [{stem}] Connection/timeout (attempt {attempt+1}): {e}")
+        except (ConnectionRefusedError, TimeoutError, _ollama.ResponseError) as e:
+            wait = config.BACKOFF_BASE**attempt
+            log.warning(f"  [{stem}] Connection/timeout (attempt {attempt + 1}): {e}")
             last_error = {"_error": str(e)}
             if attempt >= 1 and not ollama_running():
                 log.warning("  Ollama not responding — restarting...")
@@ -101,10 +107,12 @@ def analyse_with_backoff(img_b64: str, stem: str, model: str) -> dict:
             time.sleep(wait)
 
         except Exception as e:
-            wait = config.BACKOFF_BASE ** attempt
-            log.warning(f"  [{stem}] Unexpected error (attempt {attempt+1}): {e} — retry in {wait}s")
+            wait = config.BACKOFF_BASE**attempt
+            log.warning(
+                f"  [{stem}] Unexpected error (attempt {attempt + 1}): {e} — retry in {wait}s"
+            )
             last_error = {"_error": str(e)}
             time.sleep(wait)
 
-    log.error(f"  [{stem}] All {config.MAX_RETRIES+1} attempts failed")
+    log.error(f"  [{stem}] All {config.MAX_RETRIES + 1} attempts failed")
     return last_error or {"_error": "unknown"}

@@ -1,9 +1,10 @@
 """Tests for duplicate module."""
+
 import imagehash
-import pytest
-from lora_pipeline.duplicate import check_duplicate, reset, HAMMING_THRESHOLD
 from helpers import make_rgb_image
+
 from lora_pipeline import duplicate as dup_module
+from lora_pipeline.duplicate import HAMMING_THRESHOLD, check_duplicate, reset
 
 
 class TestCheckDuplicate:

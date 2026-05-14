@@ -1,7 +1,8 @@
 """Perceptual hash based near-duplicate detection."""
+
 import imagehash
 
-_seen_hashes: dict[str, str] = {}   # phash → stem
+_seen_hashes: dict[str, str] = {}  # phash → stem
 
 HAMMING_THRESHOLD = 4
 

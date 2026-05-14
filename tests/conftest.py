@@ -1,7 +1,8 @@
 """Shared fixtures."""
+
 import os
+
 import pytest
-from pathlib import Path
 from helpers import make_rgb_image, save_image
 
 # Provide a dummy root so config imports without error; patch_dirs overrides per test.
@@ -30,13 +31,14 @@ def tmp_out(tmp_path):
 
 @pytest.fixture
 def patch_dirs(tmp_src, tmp_out, monkeypatch):
-    monkeypatch.setattr(cfg, "SOURCE_DIR",      tmp_src)
-    monkeypatch.setattr(cfg, "OUTPUT_DIR",       tmp_out)
-    monkeypatch.setattr(cfg, "CHECKPOINT_FILE",  tmp_out / "_metadata" / "checkpoint.json")
-    monkeypatch.setattr(cfg, "FAILED_FILE",      tmp_out / "_metadata" / "failed.txt")
-    monkeypatch.setattr(cfg, "LOG_FILE",         tmp_out / "_metadata" / "process.log")
+    monkeypatch.setattr(cfg, "SOURCE_DIR", tmp_src)
+    monkeypatch.setattr(cfg, "OUTPUT_DIR", tmp_out)
+    monkeypatch.setattr(cfg, "CHECKPOINT_FILE", tmp_out / "_metadata" / "checkpoint.json")
+    monkeypatch.setattr(cfg, "FAILED_FILE", tmp_out / "_metadata" / "failed.txt")
+    monkeypatch.setattr(cfg, "LOG_FILE", tmp_out / "_metadata" / "process.log")
     # also patch file_ops module-level references
     import lora_pipeline.file_ops as fo
+
     monkeypatch.setattr(fo, "config", cfg)
     dup_module.reset()
     return cfg

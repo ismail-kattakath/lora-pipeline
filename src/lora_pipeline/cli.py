@@ -1,8 +1,13 @@
 """Entry point — argparse, logging setup, signal handler."""
-import argparse, logging, signal, threading
+
+import argparse
+import logging
+import signal
+import threading
 from logging.handlers import RotatingFileHandler
+
 from . import config
-from .bootstrap import ensure_packages, ensure_ollama
+from .bootstrap import ensure_ollama, ensure_packages
 from .processor import run
 
 
@@ -14,11 +19,13 @@ def setup_logging() -> logging.Logger:
     log.setLevel(logging.DEBUG)
 
     if not log.handlers:
-        fh = RotatingFileHandler(config.LOG_FILE, maxBytes=5*1024*1024,
-                                  backupCount=3, encoding="utf-8")
+        fh = RotatingFileHandler(
+            config.LOG_FILE, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
+        )
         fh.setLevel(logging.DEBUG)
-        fh.setFormatter(logging.Formatter(
-            "%(asctime)s %(levelname)-8s %(message)s", "%Y-%m-%d %H:%M:%S"))
+        fh.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)-8s %(message)s", "%Y-%m-%d %H:%M:%S")
+        )
 
         ch = logging.StreamHandler()
         ch.setLevel(logging.INFO)
@@ -32,25 +39,23 @@ def setup_logging() -> logging.Logger:
 
 def main():
     ap = argparse.ArgumentParser(
-        description="lora-pipeline dataset processor — single-pass Qwen pipeline")
-    ap.add_argument("--dry-run",      action="store_true",
-                    help="Classify only, do not write files")
-    ap.add_argument("--limit",        type=int, default=0,
-                    help="Process only first N images (0 = all)")
-    ap.add_argument("--reset",        action="store_true",
-                    help="Ignore checkpoint, reprocess everything")
-    ap.add_argument("--retry-failed", action="store_true",
-                    help="Only reprocess images listed in failed.txt")
+        description="lora-pipeline dataset processor — single-pass Qwen pipeline"
+    )
+    ap.add_argument("--dry-run", action="store_true", help="Classify only, do not write files")
+    ap.add_argument("--limit", type=int, default=0, help="Process only first N images (0 = all)")
+    ap.add_argument("--reset", action="store_true", help="Ignore checkpoint, reprocess everything")
+    ap.add_argument(
+        "--retry-failed", action="store_true", help="Only reprocess images listed in failed.txt"
+    )
     args = ap.parse_args()
 
     log = setup_logging()
 
     shutdown = threading.Event()
-    signal.signal(signal.SIGINT,
-                  lambda sig, frame: (
-                      log.info("\nCtrl+C — finishing current image..."),
-                      shutdown.set()
-                  ))
+    signal.signal(
+        signal.SIGINT,
+        lambda sig, frame: (log.info("\nCtrl+C — finishing current image..."), shutdown.set()),
+    )
 
     ensure_packages()
     model = ensure_ollama(log)

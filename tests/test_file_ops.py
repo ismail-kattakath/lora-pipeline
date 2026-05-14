@@ -1,13 +1,18 @@
 """Tests for file_ops module."""
-import json, time
+
 from pathlib import Path
 from unittest.mock import patch
+
 import pytest
-from lora_pipeline.file_ops import (
-    atomic_write, load_checkpoint, save_checkpoint,
-    load_failed, append_failed,
-)
+
 import lora_pipeline.config as cfg
+from lora_pipeline.file_ops import (
+    append_failed,
+    atomic_write,
+    load_checkpoint,
+    load_failed,
+    save_checkpoint,
+)
 
 
 class TestAtomicWrite:
@@ -46,7 +51,7 @@ class TestCheckpoint:
         assert "completed" in cp
 
     def test_save_and_reload(self, patch_dirs):
-        cp = {"completed": ["a","b"], "errors": 2, "counts": {}, "start_time": 0.0}
+        cp = {"completed": ["a", "b"], "errors": 2, "counts": {}, "start_time": 0.0}
         save_checkpoint(cp)
         loaded = load_checkpoint()
         assert loaded["completed"] == ["a", "b"]
@@ -59,6 +64,7 @@ class TestCheckpoint:
 
     def test_save_failure_logged(self, patch_dirs, caplog):
         import logging
+
         bad_path = Path("/nonexistent/cp.json")
         with patch("lora_pipeline.file_ops.config") as mock_cfg:
             mock_cfg.CHECKPOINT_FILE = bad_path

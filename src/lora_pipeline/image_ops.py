@@ -1,7 +1,11 @@
 """Image loading, encoding, and metadata extraction."""
-import base64, io
+
+import base64
+import io
 from pathlib import Path
+
 from PIL import Image, ImageOps
+
 from . import config
 
 
@@ -34,15 +38,15 @@ def image_to_b64(img: Image.Image) -> str:
 
 
 def resolution_meta(img: Image.Image) -> dict:
-    w, h   = img.size
-    mp     = round((w * h) / 1_000_000, 2)
+    w, h = img.size
+    mp = round((w * h) / 1_000_000, 2)
     long_e = max(w, h)
-    tier   = "high" if long_e >= 1920 else ("medium" if long_e >= 1280 else "low")
-    ratio  = "portrait" if h > w else ("landscape" if w > h else "square")
-    return dict(width=w, height=h, megapixels=mp,
-                resolution_tier=tier, aspect_ratio=ratio)
+    tier = "high" if long_e >= 1920 else ("medium" if long_e >= 1280 else "low")
+    ratio = "portrait" if h > w else ("landscape" if w > h else "square")
+    return dict(width=w, height=h, megapixels=mp, resolution_tier=tier, aspect_ratio=ratio)
 
 
 def get_phash(img: Image.Image) -> str:
     import imagehash
+
     return str(imagehash.phash(img))

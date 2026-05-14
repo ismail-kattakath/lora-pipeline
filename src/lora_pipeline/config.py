@@ -1,4 +1,5 @@
 """Central configuration — paths, constants, and the Qwen prompt."""
+
 import os
 from pathlib import Path
 
@@ -6,37 +7,39 @@ from pathlib import Path
 _root = os.environ.get("IMAGE_ROOT")
 if not _root:
     raise EnvironmentError(
-        "IMAGE_ROOT environment variable must be set "
-        "(e.g. IMAGE_ROOT=/Users/you/Pictures)"
+        "IMAGE_ROOT environment variable must be set (e.g. IMAGE_ROOT=/Users/you/Pictures)"
     )
 
 SOURCE_DIR = Path(_root) / "izzykatt"
 OUTPUT_DIR = Path(_root) / "izzykatt-dataset"
 
 CHECKPOINT_FILE = OUTPUT_DIR / "_metadata" / "checkpoint.json"
-FAILED_FILE     = OUTPUT_DIR / "_metadata" / "failed.txt"
-LOG_FILE        = OUTPUT_DIR / "_metadata" / "process.log"
+FAILED_FILE = OUTPUT_DIR / "_metadata" / "failed.txt"
+LOG_FILE = OUTPUT_DIR / "_metadata" / "process.log"
 
 FOLDERS = [
-    "solo", "solo-nsfw",
-    "group", "group-nsfw",
-    "no-subject", "rejected",
+    "solo",
+    "solo-nsfw",
+    "group",
+    "group-nsfw",
+    "no-subject",
+    "rejected",
     "_metadata",
 ]
 
 # ── Model ──────────────────────────────────────────────────────────────────
-MODEL          = "qwen3.5:9b-q8_0"
+MODEL = "qwen3.5:9b-q8_0"
 MODEL_FALLBACK = "qwen3.5:9b"
-OLLAMA_URL     = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_URL = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 
 # ── Processing ─────────────────────────────────────────────────────────────
-TRIGGER            = "[trigger]"
-THUMB_SIZE         = (1024, 1024)
-CALL_TIMEOUT       = 120   # seconds per Qwen call
-MAX_RETRIES        = 4
-BACKOFF_BASE       = 2
+TRIGGER = "[trigger]"
+THUMB_SIZE = (1024, 1024)
+CALL_TIMEOUT = 120  # seconds per Qwen call
+MAX_RETRIES = 4
+BACKOFF_BASE = 2
 SERVER_RESTART_WAIT = 8
-NUM_PREDICT        = 8192  # thinking + JSON output; qwen3.5 thinks before responding
+NUM_PREDICT = 8192  # thinking + JSON output; qwen3.5 thinks before responding
 
 # ── Prompt ─────────────────────────────────────────────────────────────────
 PROMPT = """Analyse this image and return a single JSON object with exactly these keys.
