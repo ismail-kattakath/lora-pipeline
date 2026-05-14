@@ -19,6 +19,7 @@ class TimeoutError(Exception):
 
 def call_qwen(img_b64: str, stem: str, model: str) -> dict:
     result, exc_holder = {}, []
+    last_token_time: list[float] = [time.time()]
 
     def _call():
         try:
@@ -35,6 +36,7 @@ def call_qwen(img_b64: str, stem: str, model: str) -> dict:
             )
             for chunk in stream:
                 token = chunk["message"]["content"]
+                last_token_time[0] = time.time()
                 tokens.append(token)
 
                 if not seen_open:
@@ -71,10 +73,17 @@ def call_qwen(img_b64: str, stem: str, model: str) -> dict:
 
     t = threading.Thread(target=_call, daemon=True)
     t.start()
-    t.join(timeout=config.CALL_TIMEOUT)
+    deadline = time.time() + config.CALL_TIMEOUT
+    while t.is_alive():
+        t.join(timeout=1)
+        if not t.is_alive():
+            break
+        idle = time.time() - last_token_time[0]
+        if idle > config.TOKEN_TIMEOUT:
+            raise TimeoutError(f"Qwen stream silent for {idle:.0f}s — treating as hung")
+        if time.time() > deadline:
+            raise TimeoutError(f"Qwen call exceeded absolute limit of {config.CALL_TIMEOUT}s")
 
-    if t.is_alive():
-        raise TimeoutError(f"Qwen call timed out after {config.CALL_TIMEOUT}s")
     if exc_holder:
         raise exc_holder[0]
 
