@@ -6,7 +6,7 @@ LOG := pipeline_run.log
 
 .PHONY: all setup install run run-detached run-dry stop logs logs-ollama logs-all \
         docker-build docker-run docker-run-cloud docker-logs docker-stop \
-        test coverage typecheck clean reset
+        test coverage typecheck lint clean reset
 
 all: setup
 
@@ -15,6 +15,7 @@ $(VENV)/bin/activate:
 
 setup: $(VENV)/bin/activate
 	$(PIP) install -e ".[dev]"
+	$(BIN)/pre-commit install
 
 install: setup
 
@@ -55,6 +56,11 @@ coverage: setup
 	$(BIN)/pytest --cov=lora_pipeline -q
 
 typecheck: setup
+	$(BIN)/mypy src/
+
+lint: setup
+	$(BIN)/ruff check src/ tests/
+	$(BIN)/ruff format --check src/ tests/
 	$(BIN)/mypy src/
 
 docker-build:

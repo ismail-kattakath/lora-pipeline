@@ -31,7 +31,7 @@ def load_image(path: Path) -> Image.Image:
 
 def image_to_b64(img: Image.Image) -> str:
     thumb = img.copy()
-    thumb.thumbnail(config.THUMB_SIZE, Image.LANCZOS)
+    thumb.thumbnail(config.THUMB_SIZE, Image.Resampling.LANCZOS)
     buf = io.BytesIO()
     thumb.save(buf, format="JPEG", quality=92)
     return base64.b64encode(buf.getvalue()).decode()
