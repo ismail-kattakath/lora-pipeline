@@ -27,7 +27,7 @@ FOLDERS = [
 # ── Model ──────────────────────────────────────────────────────────────────
 MODEL          = "qwen3.5:9b-q8_0"
 MODEL_FALLBACK = "qwen3.5:9b"
-OLLAMA_URL     = "http://localhost:11434"
+OLLAMA_URL     = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 
 # ── Processing ─────────────────────────────────────────────────────────────
 TRIGGER            = "[trigger]"

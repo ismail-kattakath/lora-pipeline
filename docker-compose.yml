@@ -1,0 +1,15 @@
+services:
+  pipeline:
+    build: .
+    image: lora-pipeline:latest
+    volumes:
+      - ${IMAGE_ROOT}:/data
+    environment:
+      IMAGE_ROOT: /data
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    restart: "no"

@@ -4,7 +4,9 @@ PIP := $(VENV)/bin/pip
 BIN := $(VENV)/bin
 LOG := pipeline_run.log
 
-.PHONY: all setup install run run-detached run-dry stop logs test coverage typecheck clean reset
+.PHONY: all setup install run run-detached run-dry stop logs logs-ollama logs-all \
+        docker-build docker-run docker-run-cloud docker-logs docker-stop \
+        test coverage typecheck clean reset
 
 all: setup
 
@@ -54,6 +56,21 @@ coverage: setup
 
 typecheck: setup
 	$(BIN)/mypy src/
+
+docker-build:
+	docker compose build
+
+docker-run:
+	IMAGE_ROOT=$(IMAGE_ROOT) docker compose up
+
+docker-run-cloud:
+	IMAGE_ROOT=$(IMAGE_ROOT) docker compose -f docker-compose.yml -f docker-compose.cloud.yml up
+
+docker-logs:
+	docker compose logs -f pipeline
+
+docker-stop:
+	docker compose down
 
 clean:
 	rm -rf $(VENV) __pycache__ .coverage htmlcov .pipeline.pid

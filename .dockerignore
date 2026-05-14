@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.log
+.git/
+.pytest_cache/
+.coverage
+htmlcov/
+.pipeline.pid
+pipeline_run.log
