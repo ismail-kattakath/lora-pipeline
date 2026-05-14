@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lora-pipeline"
+version = "0.1.0"
+description = "Single-pass dataset processor for Flux LoRA training via Qwen + Ollama"
+requires-python = ">=3.10"
+dependencies = [
+    "Pillow>=10.0",
+    "imagehash>=4.3",
+    "ollama>=0.3",
+]
+
+[project.scripts]
+lora-pipeline = "lora_pipeline.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "coverage>=7.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "--tb=short -q"
+
+[tool.coverage.run]
+source = ["src/lora_pipeline"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lora_pipeline"]
