@@ -336,6 +336,7 @@ def main():
                 label="Filter",
                 scale=1,
             )
+            refresh_btn = gr.Button("↻ Refresh table", size="sm", scale=1)
             selected_display = gr.Textbox(
                 label="Selected", interactive=False, scale=4, placeholder="click a row"
             )
@@ -409,10 +410,11 @@ def main():
         restart_ollama_btn.click(do_restart_ollama, [], [ollama_box, msg_box])
         table.select(on_row_select, [filter_dd], [selected_stem, selected_display])
         retry_btn.click(do_retry, [selected_stem], msg_box)
+        # Table only refreshes on explicit user action — never automatically
         filter_dd.change(refresh_table, [filter_dd], table)
+        refresh_btn.click(refresh_table, [filter_dd], table)
+        # Stats refresh automatically; table does not
         timer.tick(refresh_stats, [], stat_outputs)
-        timer.tick(refresh_table, [filter_dd], table)
         demo.load(refresh_stats, [], stat_outputs)
-        demo.load(refresh_table, [filter_dd], table)
 
     demo.launch(server_name="0.0.0.0", server_port=7860, share=False, theme=gr.themes.Soft())
