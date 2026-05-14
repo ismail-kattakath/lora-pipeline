@@ -3,6 +3,7 @@ PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 BIN := $(VENV)/bin
 LOG := pipeline_run.log
+PROCESS_LOG := $(IMAGE_ROOT)/izzykatt-dataset/_metadata/process.log
 
 .PHONY: all setup install run run-detached run-dry stop logs logs-ollama logs-all \
         docker-build docker-run docker-run-cloud docker-logs docker-stop \
@@ -47,7 +48,7 @@ logs-ollama:
 	tail -f ~/.ollama/logs/server.log
 
 logs-all:
-	tail -f $(LOG) ~/.ollama/logs/server.log
+	tail -f $(LOG) $(PROCESS_LOG) ~/.ollama/logs/server.log
 
 test: setup
 	$(BIN)/pytest

@@ -35,7 +35,8 @@ OLLAMA_URL = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 # ── Processing ─────────────────────────────────────────────────────────────
 TRIGGER = "[trigger]"
 THUMB_SIZE = (1024, 1024)
-CALL_TIMEOUT = 120  # seconds per Qwen call
+CALL_TIMEOUT = 600  # absolute wall-clock cap per Qwen call
+TOKEN_TIMEOUT = 45  # max seconds of stream silence before treating as hung
 MAX_RETRIES = 4
 BACKOFF_BASE = 2
 SERVER_RESTART_WAIT = 8
