@@ -1,8 +1,7 @@
-"""Gradio UI — pipeline control, per-image retry, Ollama & Modal status."""
+"""Gradio UI — pipeline control, per-image retry, Ollama status."""
 
 import json
 import logging
-import subprocess
 import threading
 import time
 from pathlib import Path
@@ -16,39 +15,6 @@ from .file_ops import append_failed, load_checkpoint, load_failed, save_checkpoi
 from .processor import process_single
 
 log = logging.getLogger("ui")
-
-# ── Modal helpers ──────────────────────────────────────────────────────────
-
-
-def _modal_status() -> dict:
-    try:
-        import modal  # noqa: F401
-    except ImportError:
-        return {"installed": False, "authenticated": False, "profile": None}
-    try:
-        r = subprocess.run(
-            ["modal", "profile", "current"], capture_output=True, text=True, timeout=5
-        )
-        if r.returncode == 0:
-            return {"installed": True, "authenticated": True, "profile": r.stdout.strip()}
-        return {"installed": True, "authenticated": False, "profile": None}
-    except Exception:
-        return {"installed": True, "authenticated": False, "profile": None}
-
-
-def _restart_modal() -> tuple[bool, str]:
-    try:
-        r = subprocess.run(
-            ["modal", "app", "restart", "lora-pipeline"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        return r.returncode == 0, (r.stdout or r.stderr).strip() or "Done"
-    except FileNotFoundError:
-        return False, "modal CLI not found — pip install modal"
-    except Exception as e:
-        return False, str(e)
 
 
 # ── Pipeline worker ────────────────────────────────────────────────────────
@@ -82,6 +48,17 @@ class PipelineWorker:
     def is_paused(self) -> bool:
         return not self._pause.is_set()
 
+    def sync_from_disk(self):
+        """Re-read checkpoint and failed list — picks up changes made by the CLI process."""
+        if self.is_running:
+            return  # worker owns state while running; don't clobber it
+        cp = load_checkpoint()
+        with self._lock:
+            self.done = set(cp.get("completed", []))
+            self.counts = cp.get("counts", self.counts)
+            self.errors = cp.get("errors", self.errors)
+            self.failed = load_failed()
+
     def start(self, model: str, dry_run: bool = False):
         if self.is_running:
             return
@@ -110,14 +87,12 @@ class PipelineWorker:
             self._last_errors.pop(stem, None)
             self._meta_cache.pop(stem, None)
 
-        # Remove from checkpoint
         cp = load_checkpoint()
         completed = set(cp.get("completed", []))
         completed.discard(stem)
         cp["completed"] = list(completed)
         save_checkpoint(cp)
 
-        # Remove from failed.txt
         if config.FAILED_FILE.exists():
             lines = [
                 ln
@@ -138,7 +113,6 @@ class PipelineWorker:
             self._thread = threading.Thread(target=self._run_one, args=(src,), daemon=True)
             self._thread.start()
             return f"Retrying: {stem}"
-        # Running loop will pick it up since it re-scans pending each iteration
         return f"Queued for retry on next pass: {stem}"
 
     # ── internal ──
@@ -218,7 +192,7 @@ class PipelineWorker:
 _worker = PipelineWorker()
 
 
-# ── HTML status cards ──────────────────────────────────────────────────────
+# ── HTML status card ───────────────────────────────────────────────────────
 
 _CARD = (
     "padding:12px 16px;border:1px solid #e5e7eb;border-radius:8px;"
@@ -238,22 +212,7 @@ def _ollama_html() -> str:
     return f"<div style='{_CARD}'>{dot} <b>Ollama</b> — {label}{sub}</div>"
 
 
-def _modal_html() -> str:
-    s = _modal_status()
-    if not s["installed"]:
-        dot, label = "<span style='color:#9ca3af'>●</span>", "not installed"
-        sub = f"<div style='{_SUB}'>pip install modal</div>"
-    elif not s["authenticated"]:
-        dot, label = "<span style='color:#f59e0b'>●</span>", "not authenticated"
-        sub = f"<div style='{_SUB}'>modal token new</div>"
-    else:
-        dot, label = "<span style='color:#22c55e'>●</span>", "connected"
-        sub = f"<div style='{_SUB}'>{s.get('profile') or ''}</div>"
-    return f"<div style='{_CARD}'>{dot} <b>Modal</b> — {label}{sub}</div>"
-
-
 # ── Table & stats ──────────────────────────────────────────────────────────
-
 
 _source_cache: list[Path] = []
 
@@ -350,10 +309,6 @@ def main():
                 ollama_box = gr.HTML(_ollama_html)
             with gr.Column(scale=1, min_width=160):
                 restart_ollama_btn = gr.Button("↻ Restart Ollama", size="sm")
-            with gr.Column(scale=3):
-                modal_box = gr.HTML(_modal_html)
-            with gr.Column(scale=1, min_width=160):
-                restart_modal_btn = gr.Button("↻ Restart Modal App", size="sm")
 
         msg_box = gr.Textbox(label="", interactive=False, max_lines=1, show_label=False)
 
@@ -424,11 +379,6 @@ def main():
             ok = restart_ollama(log)
             return _ollama_html(), "Ollama restarted ✓" if ok else "Ollama restart failed ✗"
 
-        def do_restart_modal():
-            ok, msg = _restart_modal()
-            icon = "✓" if ok else "✗"
-            return _modal_html(), f"Modal: {msg} {icon}"
-
         def on_row_select(evt: gr.SelectData, current_filter):
             rows = _image_rows(current_filter)
             if rows and 0 <= evt.index[0] < len(rows):
@@ -443,10 +393,10 @@ def main():
             return _worker.retry_stem(stem)
 
         def refresh(f):
+            _worker.sync_from_disk()
             total, pending, running, done, failed = _stats()
             return (
                 _ollama_html(),
-                _modal_html(),
                 total,
                 pending,
                 running,
@@ -460,7 +410,6 @@ def main():
         pause_btn.click(do_pause_resume, [], msg_box)
         stop_btn.click(do_stop, [], msg_box)
         restart_ollama_btn.click(do_restart_ollama, [], [ollama_box, msg_box])
-        restart_modal_btn.click(do_restart_modal, [], [modal_box, msg_box])
         table.select(on_row_select, [filter_dd], [selected_stem, selected_display])
         retry_btn.click(do_retry, [selected_stem], msg_box)
         filter_dd.change(lambda f: _image_rows(f), [filter_dd], table)
@@ -469,7 +418,6 @@ def main():
             [filter_dd],
             [
                 ollama_box,
-                modal_box,
                 stat_total,
                 stat_pending,
                 stat_running,
