@@ -255,12 +255,19 @@ def _modal_html() -> str:
 # ── Table & stats ──────────────────────────────────────────────────────────
 
 
+_source_cache: list[Path] = []
+
+
 def _source_images() -> list[Path]:
-    if not config.SOURCE_DIR.exists():
-        return []
-    return sorted(
-        p for p in config.SOURCE_DIR.iterdir() if p.suffix.lower() in (".jpg", ".jpeg", ".png")
-    )
+    global _source_cache
+    if not _source_cache:
+        if config.SOURCE_DIR.exists():
+            _source_cache = sorted(
+                p
+                for p in config.SOURCE_DIR.iterdir()
+                if p.suffix.lower() in (".jpg", ".jpeg", ".png")
+            )
+    return _source_cache
 
 
 def _image_rows(status_filter: str = "All") -> list[list]:
@@ -382,13 +389,13 @@ def main():
         table = gr.Dataframe(
             headers=["File", "Status", "Folder", "Score", "NSFW", "Processed at", "Error"],
             datatype=["str"] * 7,
-            value=_image_rows,
+            value=[],
             interactive=False,
             wrap=True,
         )
 
         selected_stem = gr.State(value="")
-        timer = gr.Timer(value=3)
+        timer = gr.Timer(value=10)
 
         # ── Event handlers ─────────────────────────────────────────────
 

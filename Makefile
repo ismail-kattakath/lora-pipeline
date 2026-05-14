@@ -6,7 +6,7 @@ LOG := pipeline_run.log
 PROCESS_LOG := $(IMAGE_ROOT)/izzykatt-dataset/_metadata/process.log
 
 .PHONY: all setup install run run-detached run-dry stop logs logs-ollama logs-all \
-        docker-build docker-run docker-run-cloud docker-logs docker-stop \
+        ui docker-build docker-run docker-run-cloud docker-logs docker-stop \
         test coverage typecheck lint clean reset
 
 all: setup
@@ -63,6 +63,10 @@ lint: setup
 	$(BIN)/ruff check src/ tests/
 	$(BIN)/ruff format --check src/ tests/
 	$(BIN)/mypy src/
+
+ui: setup
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	$(BIN)/lora-ui
 
 docker-build:
 	docker compose build
