@@ -300,7 +300,7 @@ def main():
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     (config.OUTPUT_DIR / "_metadata").mkdir(exist_ok=True)
 
-    with gr.Blocks(title="LoRA Pipeline", theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(title="LoRA Pipeline") as demo:
         gr.Markdown("## LoRA Dataset Pipeline")
 
         # ── Infrastructure status ──────────────────────────────────────
@@ -392,18 +392,15 @@ def main():
                 return "No image selected — click a row first"
             return _worker.retry_stem(stem)
 
-        def refresh(f):
+        def refresh_stats():
             _worker.sync_from_disk()
             total, pending, running, done, failed = _stats()
-            return (
-                _ollama_html(),
-                total,
-                pending,
-                running,
-                done,
-                failed,
-                _image_rows(f),
-            )
+            return _ollama_html(), total, pending, running, done, failed
+
+        def refresh_table(f):
+            return _image_rows(f)
+
+        stat_outputs = [ollama_box, stat_total, stat_pending, stat_running, stat_done, stat_failed]
 
         # wire up
         start_btn.click(do_start, [model_input, dry_run_cb], msg_box)
@@ -412,19 +409,10 @@ def main():
         restart_ollama_btn.click(do_restart_ollama, [], [ollama_box, msg_box])
         table.select(on_row_select, [filter_dd], [selected_stem, selected_display])
         retry_btn.click(do_retry, [selected_stem], msg_box)
-        filter_dd.change(lambda f: _image_rows(f), [filter_dd], table)
-        timer.tick(
-            refresh,
-            [filter_dd],
-            [
-                ollama_box,
-                stat_total,
-                stat_pending,
-                stat_running,
-                stat_done,
-                stat_failed,
-                table,
-            ],
-        )
+        filter_dd.change(refresh_table, [filter_dd], table)
+        timer.tick(refresh_stats, [], stat_outputs)
+        timer.tick(refresh_table, [filter_dd], table)
+        demo.load(refresh_stats, [], stat_outputs)
+        demo.load(refresh_table, [filter_dd], table)
 
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=False)
+    demo.launch(server_name="0.0.0.0", server_port=7860, share=False, theme=gr.themes.Soft())
