@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 lora-pipeline = "lora_pipeline.cli:main"
+lora-ui = "lora_pipeline.ui:main"
 
 [project.optional-dependencies]
 dev = [
@@ -24,6 +25,12 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
     "pre-commit>=3.7",
+]
+ui = [
+    "gradio>=4.0",
+]
+modal = [
+    "modal>=0.60",
 ]
 
 [tool.pytest.ini_options]
